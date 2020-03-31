@@ -15,7 +15,7 @@
     "test": "mocha",
     "testsea": "mocha test/sea.js",
     "testaxe": "mocha test/axe/holy-grail.js",
-    "testmap": "mocha test/map/nodata.js",
+    "testmap": "mocha test/map/main.js",
     "e2e": "mocha e2e/distributed.js",
     "docker": "hooks/build",
     "minify": "uglifyjs gun.js -o gun.min.js -c -m",
