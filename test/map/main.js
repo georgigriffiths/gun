@@ -103,7 +103,7 @@ describe("The Holy Grail AXE Test!", function(){
 			tests.push(client.run(function(test){
 				localStorage.clear(); console.log('Clear localStorage!!!');
 				var env = test.props;
-				var opt = {peers:['http://'+ env.config.IP + ':' + (env.config.port + 1) + '/gun'], wait:1000};
+				var opt = {peers:['http://'+ env.config.IP + ':' + (env.config.port + 1) + '/gun']};
 				var pid = location.hash.slice(1);
 				if (pid) { opt.pid = pid; }
 				Gun.on('opt', function(ctx) {
@@ -133,7 +133,7 @@ describe("The Holy Grail AXE Test!", function(){
 			setTimeout(function () {
 				room.get('users').map().off()
 				recieve_count === 1 ? test.done() : test.fail('Recieved '+recieve_count + ' times')
-			}, 3000)
+			}, 5000)
 
 				room.get('users').map().on(function(data){
 					if('testid' === data.id){
@@ -166,28 +166,37 @@ describe("The Holy Grail AXE Test!", function(){
 		})])
 	});
 
+	
+
 	it("Bob receive object from Alice second time", function(){
 		return Promise.all([bob.run(function(test){
 			console.log('bob listen room')
 			$('#name').text('Bob');
 			test.async();
 			var room = gun.get('room')
-			var recieve_count = 0
+			var receive_count = 0
 			setTimeout(function () {
-				room.get('users').map().off()
-				recieve_count === 3 ? test.done() : test.fail('Recieved '+recieve_count + ' times')
-			}, 3000)
+				room.get('users2').map().off()
+				receive_count === 3 ? test.done() : test.fail('Received '+receive_count + ' times')
+			}, 10000)
 
-				room.get('users').map().on(function(data){
-					if('testid' === data.id){
-						console.log('[OK] Bob receive the room object: ', data);
-						return recieve_count++
-					} else {
-						var err = '[FAIL] Bob MUST receive: Hi Bob! but receive: ' + data + ' Storage: ' + localStorage.getItem('gun/');
-						console.log(err);
-						return test.fail(err);
-					}
-				})
+			room.get('users2').map().on(function(data){
+				console.log(JSON.stringify(data))
+				if('testid' === data.id && receive_count === 1 && data.data === 'test'){
+					console.log('[OK] Bob receive the room object: ', data);
+					return receive_count++
+				} else if('testid' === data.id && receive_count === 2 && data.data === 'test2'){
+					console.log('[OK] Bob receive the room object: ', data);
+					return receive_count++
+				} else if('testid' === data.id && receive_count === 0 && data.data === undefined){
+					console.log('[OK] Bob receive the room object: ', data);
+					return receive_count++
+				} else {
+					var err = '[FAIL] Bob MUST receive correct data: ' + data.data + ' Storage: ' + localStorage.getItem('gun/');
+					console.log(err);
+					return test.fail(err);
+				}
+			})
 
 			
 		}),alice.run(function(test){
@@ -196,24 +205,24 @@ describe("The Holy Grail AXE Test!", function(){
 			console.log('alice send room')
 			var room = gun.get('room') 
 
-				room.get('users').map().on(function(data) {
-					console.log('alice map on',data)
-					room.get('users').map().off()
-					test.done()
-						// TODO: Need `.once` first for subscription. If Alice do a `.put` before a `.once`, Alice will get old data from localStorage if Bob update
-				});
-				setTimeout(function () {
-					room.get('users').get('testid').put({id:'testid'});
-					room.get('users').get('testid').put({id:'testid', data:'test'});
-					room.get('users').get('testid').put({id:'testid', data:'test2'});
-				}, 1000);
+			room.get('users2').map().on(function(data) {
+				console.log('alice map on',data)
+			});
+			setTimeout(function () {
+				room.get('users2').get('testid').put({id:'testid'});
+			}, 1000);
+			setTimeout(function () {
+				room.get('users2').get('testid').put({id:'testid', data:'test'});
+			}, 2000);
 
-
-				
+			setTimeout(function () {
+				room.get('users2').get('testid').put({id:'testid', data:'test2'});
+				room.get('users2').map().off()
+				test.done()
+			}, 3000);
 
 		})])
 	});
-
 
 
 
@@ -225,9 +234,9 @@ describe("The Holy Grail AXE Test!", function(){
 		},1000);
 	});
 	after("Everything shut down.", function(){
-		// for(var i=0; i<config.browsers; i++) {
-		// 	drivers[i].quit()
-		// };
+		for(var i=0; i<config.browsers; i++) {
+			drivers[i].quit()
+		};
 
 		servers.run(function(){
 			process.exit();
