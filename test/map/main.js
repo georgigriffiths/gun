@@ -225,6 +225,63 @@ describe("The Holy Grail AXE Test!", function(){
 	});
 
 
+	it("Bob receive object from Alice third time", function(){
+		return Promise.all([bob.run(function(test){
+			console.log('bob listen room')
+			$('#name').text('Bob');
+			test.async();
+			var room = gun.get('room')
+			var receive_count = 0
+			setTimeout(function () {
+				room.get('users3').map().off()
+				receive_count === 3 ? test.done() : test.fail('Received '+receive_count + ' times' + ' Storage: ' + localStorage.getItem('gun/'))
+			}, 10000)
+
+			room.get('users3').map().on(function(data){
+				console.log(JSON.stringify(data))
+				if('testid' === data.id && receive_count === 1 && data.data === 'test'){
+					console.log('[OK] Bob receive the room object: ', data);
+					return receive_count++
+				} else if('testid' === data.id && receive_count === 2 && data.data === 'test2'){
+					console.log('[OK] Bob receive the room object: ', data);
+					return receive_count++
+				} else if('testid' === data.id && receive_count === 0 && data.data === undefined){
+					console.log('[OK] Bob receive the room object: ', data);
+					return receive_count++
+				} else {
+					var err = '[FAIL] Bob MUST receive correct data: ' + data.data + ' Storage: ' + localStorage.getItem('gun/');
+					console.log(err);
+					return test.fail(err);
+				}
+			})
+
+			
+		}),alice.run(function(test){
+			test.async();
+			$('#name').text('Alice');
+			console.log('alice send room')
+			var room = gun.get('room') 
+
+			room.get('users3').map().on(function(data) {
+				console.log('alice map on',data)
+			});
+			setTimeout(function () {
+				room.get('users3').get('testid').get('id').put('testid');
+			}, 1000);
+			setTimeout(function () {
+				room.get('users3').get('testid').get('data').put('test');
+			}, 2000);
+
+			setTimeout(function () {
+				room.get('users3').get('testid').get('data').put('test2');
+				room.get('users3').map().off()
+				test.done()
+			}, 3000);
+
+		})])
+	});
+
+
 
 
 	it("All finished!", function(done){
@@ -234,9 +291,9 @@ describe("The Holy Grail AXE Test!", function(){
 		},1000);
 	});
 	after("Everything shut down.", function(){
-		for(var i=0; i<config.browsers; i++) {
-			drivers[i].quit()
-		};
+		// for(var i=0; i<config.browsers; i++) {
+		// 	drivers[i].quit()
+		// };
 
 		servers.run(function(){
 			process.exit();
