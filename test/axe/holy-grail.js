@@ -9,6 +9,7 @@
  * Tip 2: if you clone the gun repo, you need to create a link do gun package. Do `npm install && cd node_modules && ln -s ../ gun`
  * Tip 3: If you not in localhost, run the browsers in anonymous mode because of domain security policies. https://superuser.com/questions/565409/how-to-stop-an-automatic-redirect-from-http-to-https-in-chrome
  */
+var selenium = require('selenium-webdriver')
 var config = {
 	IP: require('ip').address(),
 	port: 8765,
@@ -48,11 +49,18 @@ var alice = browsers.pluck(1);
 var bob = browsers.excluding(alice).pluck(1);
 var john = browsers.excluding(alice).excluding(bob).pluck(1);
 var again = {};
+var drivers = []
 
 describe("The Holy Grail AXE Test!", function(){
 	this.timeout(5 * 60 * 1000);
 // 	this.timeout(10 * 60 * 1000);
-
+	before(function () {
+		for(var i=0;  i<config.browsers;i++) {
+			drivers[i] = new selenium.Builder()
+			.withCapabilities(selenium.Capabilities.chrome())
+			.build()
+		};
+	})
 	it("Servers have joined!", function(){
 		return servers.atLeast(config.servers);
 	});
@@ -61,14 +69,14 @@ describe("The Holy Grail AXE Test!", function(){
 		return server.run(function(test){
 			var env = test.props;
 			test.async();
-			try{ require('fs').unlinkSync(env.i+'dataaxe') }catch(e){}
-			try{ require('fs').unlinkSync((env.i+1)+'dataaxe') }catch(e){}
+			try{ require('fs-extra').removeSync(env.i+'dataaxe') }catch(e){}
+			try{ require('fs-extra').removeSync((env.i+1)+'dataaxe') }catch(e){}
 			var port = env.config.port + env.i;
 			var server = require('http').createServer(function(req, res){
 				res.end("I am "+ env.i +"!");
 			});
-			var Gun = require('gun');
-			require('gun/axe');
+			var Gun = require('../../../');
+			require('../../../axe');
 			var gun = Gun({
 				file: env.i+'dataaxe',
 				web: server
@@ -80,7 +88,10 @@ describe("The Holy Grail AXE Test!", function(){
 	});
 
 	it(config.browsers +" browser(s) have joined!", function(){
-		console.log("PLEASE OPEN http://"+ config.IP +":"+ config.port +" IN "+ config.browsers +" BROWSER(S)!");
+		for(var i=0;  i<config.browsers;i++) {
+			drivers[i].get('http://'+ config.IP +":"+ config.port)
+		};
+		//console.log("PLEASE OPEN http://"+ config.IP +":"+ config.port +" IN "+ config.browsers +" BROWSER(S)!");
 		return browsers.atLeast(config.browsers);
 	});
 
@@ -344,8 +355,8 @@ describe("The Holy Grail AXE Test!", function(){
 			var server = require('http').createServer(function(req, res){
 				res.end("I am "+ env.i +"!");
 			});
-			var Gun = require('gun');
-			require('gun/axe');
+			var Gun = require('../../../');
+			require('../../../axe');
 			var gun = Gun({
 				file: env.i+'dataaxe',
 				web: server
@@ -413,11 +424,9 @@ describe("The Holy Grail AXE Test!", function(){
 		},1000);
 	});
 	after("Everything shut down.", function(){
-		browsers.run(function(){
-			//location.reload();
-			//setTimeout(function(){
-			//}, 15 * 1000);
-		});
+		for(var i=0; i<config.browsers; i++) {
+			drivers[i].quit()
+		};
 		return servers.run(function(){
 			process.exit();
 		});

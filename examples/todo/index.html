@@ -118,7 +118,7 @@
     // for how to build a simplified version
     // of this example: https://scrimba.com/c/cW2Vsa
     var gun = Gun(location.origin + '/gun');
-    var think = gun.get('think1/' + location.hash.slice(1));
+    var think = gun.get('think/' + location.hash.slice(1));
     var thoughtItemStr = function(id) { return '<li class="thought__item"><label class="visually-hidden" for="' + id + '">Thought</label><input id="' + id + '" class="thought__input huet"><li/>'}
     var typing, throttle;
     $('.thought__add').on('click', function () {
@@ -132,7 +132,7 @@
       typing = id;
       clearTimeout(throttle);
       throttle = setTimeout(function () {
-        think.get(id).put(input.val());
+        think.get(id).put({input:input.val()});
         typing = false;
       }, 10);
     });
@@ -140,7 +140,7 @@
       var li = $('#' + id).parent()[0] || $(thoughtItemStr(id)).prependTo('.thought__list');
       if (thought) {
         if (id === typing) { return }
-        $(li).find('.thought__input').val(thought);
+        $(li).find('.thought__input').val(thought.input);
       } else {
         $(li).hide();
       }
